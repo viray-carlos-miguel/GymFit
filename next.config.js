@@ -1,6 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import { hostname } from "os";
-import "./src/env.js"; // Importing your environment configuration
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const coreConfig = {
@@ -13,6 +14,19 @@ const coreConfig = {
   },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+  webpack: (config, { isServer }) => {
+    // Only add the plugin for client-side compilation
+    if (!isServer) {
+      config.plugins.push(
+        new MiniCssExtractPlugin({
+          filename: 'static/css/[name].[contenthash].css',
+          chunkFilename: 'static/css/[id].[contenthash].css',
+          ignoreOrder: true, // Enable to remove warnings about conflicting order
+        })
+      );
+    }
+    return config;
+  },
 };
 
 const sentryConfig = withSentryConfig(coreConfig, {
