@@ -224,6 +224,7 @@ export default function ProgressPage() {
                                     return dayOfYear % max;
                                 };
 
+                                
                                 setTodaysPlan({
                                     strength: plan.strength[getExerciseIndex(new Date(), plan.strength.length)]!,
                                     cardio: plan.cardio[getExerciseIndex(new Date(), plan.cardio.length)]!,
