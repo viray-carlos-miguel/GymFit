@@ -1,13 +1,11 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
+import { pgTable, serial, varchar, timestamp, boolean, decimal, doublePrecision, integer, text } from "drizzle-orm/pg-core";
 
 import { sql } from "drizzle-orm";
 import {
   index,
-  integer,
   pgTableCreator,
-  timestamp,
-  varchar,
 } from "drizzle-orm/pg-core";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { url } from "inspector";
@@ -37,4 +35,23 @@ export const images = createTable(
   (example) => ({
     nameIndex: index("name_idx").on(example.name),
   })
+
 );
+// src/server/db/schema.ts
+
+ 
+
+
+export const progressEntries = pgTable("progress_entries", {
+  id: serial("id").primaryKey(), // ✅ use serial instead of integer + .notNull()
+  userId: text("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  workoutCompleted: boolean("workout_completed").notNull(),
+  weight: doublePrecision("weight"),
+  workoutDuration: integer("workout_duration"),
+  notes: text("notes"),
+  photoUrl: text("photo_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+

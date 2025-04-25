@@ -1,71 +1,159 @@
-import "server-only";
-import { auth } from "@clerk/nextjs/server";
 import { db } from "./db";
-import { and, eq } from "drizzle-orm";
-import { error } from "console";
-import { utapi } from "./uploadthing";
-import { images } from "./db/schema";
-import analyticsServerClient from "./analytics";
-import { redirect } from "next/navigation";
+import { progressEntries } from "./db/schema";
+import { and, eq, gte, lte, isNotNull, asc } from "drizzle-orm";
+import { ensureAuth, getMonthStartEnd, getDayStartEnd } from "./utils";
 
+// Type for progress data
+export type ProgressData = {
+  date: Date;
+  workoutCompleted: boolean;
+  weight?: number;
+  workoutDuration?: number;
+  notes?: string;
+  photoUrl?: string;
+};
 
+// Record daily progress
+export async function recordDailyProgress(data: Omit<ProgressData, 'date'>) {
+  const user = await ensureAuth();
 
-export async function getMyImages() {
-     const user = await auth();
-      if (!user.userId) throw new Error("Unauthorized");
-    
-      
-      const images = await db.query.images.findMany({
-        where: (model) => eq(model.userId,user.userId),
-        orderBy: (model, {desc}) => desc (model.id),
-      });
+  const today = new Date();
+  const { dayStart, dayEnd } = getDayStartEnd(today);
 
-      return images;
-}
-
-export async function getImage(id: number) {
-  const user = await auth();
-   if (!user.userId) throw new Error("Unauthorized");
- 
-   
-   const image = await db.query.images.findFirst({
-     where: (model, {eq}) => eq(model.id,id),
-   });
-
-   if (!image) throw new Error("Image Not Found");
-
-   if (image.userId !==user.userId) throw new Error ("Unauthorized");
-
-   return image;
-}
-export async function deleteImage(id: number) {
-  const user = await auth();
-  if (!user.userId) throw new Error("Unauthorized");
-
-
-  const image = await db.query.images.findFirst({
-    where: (model, { eq }) => eq(model.id, id),
+  const existingEntry = await db.query.progressEntries.findFirst({
+    where: and(
+      eq(progressEntries.userId, user.userId),
+      gte(progressEntries.date, dayStart),
+      lte(progressEntries.date, dayEnd)
+    ),
   });
 
-  if (!image) throw new Error("Image Not Found");
+  if (existingEntry) {
+    await db.update(progressEntries)
+      .set({
+        workoutCompleted: data.workoutCompleted,
+        weight: data.weight,
+        workoutDuration: data.workoutDuration,
+        notes: data.notes,
+        photoUrl: data.photoUrl,
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(progressEntries.id, existingEntry.id),
+          eq(progressEntries.userId, user.userId)
+        )
+      );
+  } else {
+    await db.insert(progressEntries).values({
+      userId: user.userId,
+      date: today,
+      workoutCompleted: data.workoutCompleted,
+      weight: data.weight,
+      workoutDuration: data.workoutDuration,
+      notes: data.notes,
+      photoUrl: data.photoUrl
+    });
+  }
+}
 
-  if (image.userId !== user.userId) throw new Error("Unauthorized");
+// Get daily progress
+export async function getDailyProgress(date: Date) {
+  const user = await ensureAuth();
+  const { dayStart, dayEnd } = getDayStartEnd(date);
 
-  const fileKey = image.url?.split("/").pop();
+  const entry = await db.query.progressEntries.findFirst({
+    where: and(
+      eq(progressEntries.userId, user.userId),
+      gte(progressEntries.date, dayStart),
+      lte(progressEntries.date, dayEnd)
+    ),
+  });
 
-  if (!fileKey) throw new Error("Invalid file key");
+  return entry;
+}
 
-   await utapi.deleteFiles(fileKey);
+// Get monthly progress summary
+export async function getMonthlyProgressSummary(year: number, month: number) {
+  const user = await ensureAuth();
+  const { monthStart, monthEnd } = getMonthStartEnd(year, month);
 
-   await db.delete(images).where(and(eq(images.id,id), eq (images.userId, user.userId)));
+  const entries = await db.query.progressEntries.findMany({
+    where: and(
+      eq(progressEntries.userId, user.userId),
+      gte(progressEntries.date, monthStart),
+      lte(progressEntries.date, monthEnd)
+    ),
+    orderBy: asc(progressEntries.date),
+  });
 
-   analyticsServerClient.capture({
-    distinctId: user.userId,
-    event: "Delete  Image",
-    properties: {
-      imageId: id,
-    },
-   });
-   
-   redirect("/?deleted=true");
+  const workoutsCompleted = entries.filter(e => e.workoutCompleted).length;
+  const totalWorkoutMinutes = entries.reduce((sum, entry) => sum + (entry.workoutDuration || 0), 0);
+
+  let weightChange: number | null = null;
+  if (entries.length > 1) {
+    const firstWeight = entries[0]?.weight;
+    const lastWeight = entries[entries.length - 1]?.weight;
+    if (typeof firstWeight === 'number' && typeof lastWeight === 'number') {
+      weightChange = lastWeight - firstWeight;
+    }
+  }
+
+  let currentStreak = 0;
+  let bestStreak = 0;
+  entries.forEach(entry => {
+    if (entry.workoutCompleted) {
+      currentStreak++;
+      bestStreak = Math.max(bestStreak, currentStreak);
+    } else {
+      currentStreak = 0;
+    }
+  });
+
+  return {
+    workoutsCompleted,
+    totalWorkoutMinutes,
+    averageWorkoutMinutes: workoutsCompleted > 0 ? Math.round(totalWorkoutMinutes / workoutsCompleted) : 0,
+    weightChange,
+    bestStreak,
+    entries,
+    daysInMonth: Math.floor((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    monthStart,
+    monthEnd
+  };
+}
+
+// Get progress photo for a specific date
+export async function getProgressPhoto(date: Date) {
+  const user = await ensureAuth();
+  const { dayStart, dayEnd } = getDayStartEnd(date);
+
+  const entry = await db.query.progressEntries.findFirst({
+    where: and(
+      eq(progressEntries.userId, user.userId),
+      gte(progressEntries.date, dayStart),
+      lte(progressEntries.date, dayEnd)
+    ),
+    columns: { photoUrl: true }
+  });
+
+  return entry?.photoUrl || null;
+}
+
+// Get weight trend for a time period
+export async function getWeightTrend(startDate: Date, endDate: Date) {
+  const user = await ensureAuth();
+
+  const entries = await db.query.progressEntries.findMany({
+    where: and(
+      eq(progressEntries.userId, user.userId),
+      gte(progressEntries.date, startDate),
+      lte(progressEntries.date, endDate),
+      isNotNull(progressEntries.weight)
+    ),
+    orderBy: asc(progressEntries.date),
+    columns: { date: true, weight: true }
+  });
+
+  return entries;
 }
