@@ -7,16 +7,15 @@ import { ensureAuth, getMonthStartEnd, getDayStartEnd } from "./utils";
 export type ProgressData = {
   date: Date;
   workoutCompleted: boolean;
-  weight?: number;
-  workoutDuration?: number;
-  notes?: string;
-  photoUrl?: string;
+  weight?: number | null;
+  workoutDuration?: number | null;
+  notes?: string | null;
+  photoUrl?: string | null;
 };
-
+"use server";
 // Record daily progress
 export async function recordDailyProgress(data: Omit<ProgressData, 'date'>) {
   const user = await ensureAuth();
-
   const today = new Date();
   const { dayStart, dayEnd } = getDayStartEnd(today);
 
@@ -32,10 +31,10 @@ export async function recordDailyProgress(data: Omit<ProgressData, 'date'>) {
     await db.update(progressEntries)
       .set({
         workoutCompleted: data.workoutCompleted,
-        weight: data.weight,
-        workoutDuration: data.workoutDuration,
-        notes: data.notes,
-        photoUrl: data.photoUrl,
+        weight: data.weight !== undefined ? String(data.weight) : null,
+        workoutDuration: data.workoutDuration ?? null,
+        notes: data.notes ?? null,
+        photoUrl: data.photoUrl ?? null,
         updatedAt: new Date()
       })
       .where(
@@ -49,10 +48,10 @@ export async function recordDailyProgress(data: Omit<ProgressData, 'date'>) {
       userId: user.userId,
       date: today,
       workoutCompleted: data.workoutCompleted,
-      weight: data.weight,
-      workoutDuration: data.workoutDuration,
-      notes: data.notes,
-      photoUrl: data.photoUrl
+      weight: data.weight !== undefined ? String(data.weight) : null,
+      workoutDuration: data.workoutDuration ?? null,
+      notes: data.notes ?? null,
+      photoUrl: data.photoUrl ?? null
     });
   }
 }
@@ -70,7 +69,15 @@ export async function getDailyProgress(date: Date) {
     ),
   });
 
-  return entry;
+  if (!entry) return null;
+
+  return {
+    ...entry,
+    weight: entry.weight ? parseFloat(entry.weight) : null,
+    workoutDuration: entry.workoutDuration ?? null,
+    notes: entry.notes ?? null,
+    photoUrl: entry.photoUrl ?? null
+  };
 }
 
 // Get monthly progress summary
@@ -87,13 +94,21 @@ export async function getMonthlyProgressSummary(year: number, month: number) {
     orderBy: asc(progressEntries.date),
   });
 
-  const workoutsCompleted = entries.filter(e => e.workoutCompleted).length;
-  const totalWorkoutMinutes = entries.reduce((sum, entry) => sum + (entry.workoutDuration || 0), 0);
+  const transformedEntries = entries.map(entry => ({
+    ...entry,
+    weight: entry.weight ? parseFloat(entry.weight) : null,
+    workoutDuration: entry.workoutDuration ?? null,
+    notes: entry.notes ?? null,
+    photoUrl: entry.photoUrl ?? null
+  }));
+
+  const workoutsCompleted = transformedEntries.filter(e => e.workoutCompleted).length;
+  const totalWorkoutMinutes = transformedEntries.reduce((sum, entry) => sum + (entry.workoutDuration || 0), 0);
 
   let weightChange: number | null = null;
-  if (entries.length > 1) {
-    const firstWeight = entries[0]?.weight;
-    const lastWeight = entries[entries.length - 1]?.weight;
+  if (transformedEntries.length > 1) {
+    const firstWeight = transformedEntries[0]?.weight;
+    const lastWeight = transformedEntries[transformedEntries.length - 1]?.weight;
     if (typeof firstWeight === 'number' && typeof lastWeight === 'number') {
       weightChange = lastWeight - firstWeight;
     }
@@ -101,7 +116,7 @@ export async function getMonthlyProgressSummary(year: number, month: number) {
 
   let currentStreak = 0;
   let bestStreak = 0;
-  entries.forEach(entry => {
+  transformedEntries.forEach(entry => {
     if (entry.workoutCompleted) {
       currentStreak++;
       bestStreak = Math.max(bestStreak, currentStreak);
@@ -116,7 +131,7 @@ export async function getMonthlyProgressSummary(year: number, month: number) {
     averageWorkoutMinutes: workoutsCompleted > 0 ? Math.round(totalWorkoutMinutes / workoutsCompleted) : 0,
     weightChange,
     bestStreak,
-    entries,
+    entries: transformedEntries,
     daysInMonth: Math.floor((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1,
     monthStart,
     monthEnd
@@ -155,5 +170,8 @@ export async function getWeightTrend(startDate: Date, endDate: Date) {
     columns: { date: true, weight: true }
   });
 
-  return entries;
+  return entries.map(entry => ({
+    date: entry.date,
+    weight: entry.weight !== null ? parseFloat(entry.weight) : null
+  }));
 }

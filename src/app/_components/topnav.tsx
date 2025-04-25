@@ -25,18 +25,18 @@ export function TopNav() {
         </Link>
 
         <Link
-          href="/progress"
+          href="/progress/daily"
           className="hover:text-red-500 transition-colors flex flex-col items-center group"
         >
-          <span>Progress</span>
+          <span>Daily Tracker</span>
           <span className="h-0.5 w-0 group-hover:w-full bg-red-500 transition-all duration-300"></span>
         </Link>
 
         <Link
-          href="/report"
+          href="/progress/monthly"
           className="hover:text-red-500 transition-colors flex flex-col items-center group"
         >
-          <span>Report</span>
+          <span>Monthly Report</span>
           <span className="h-0.5 w-0 group-hover:w-full bg-red-500 transition-all duration-300"></span>
         </Link>
 

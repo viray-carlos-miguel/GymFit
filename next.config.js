@@ -40,3 +40,5 @@ const sentryConfig = withSentryConfig(coreConfig, {
 });
 
 export default sentryConfig;
+
+

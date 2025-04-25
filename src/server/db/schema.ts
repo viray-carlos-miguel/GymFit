@@ -42,16 +42,19 @@ export const images = createTable(
  
 
 
+// src/server/db/schema.ts
+
+
 export const progressEntries = pgTable("progress_entries", {
-  id: serial("id").primaryKey(), // ✅ use serial instead of integer + .notNull()
-  userId: text("user_id").notNull(),
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 256 }).notNull(),
   date: timestamp("date").notNull(),
-  workoutCompleted: boolean("workout_completed").notNull(),
-  weight: doublePrecision("weight"),
+  workoutCompleted: boolean("workout_completed").notNull().default(false),
+  weight: decimal("weight", { precision: 5, scale: 1 }),
   workoutDuration: integer("workout_duration"),
   notes: text("notes"),
-  photoUrl: text("photo_url"),
+  photoUrl: varchar("photo_url", { length: 1024 }),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
