@@ -19,7 +19,7 @@ const EXERCISE_DATA: Exercise[] = [
         muscleGroup: "Legs",
         difficulty: "Intermediate",
         description: "Compound exercise that targets quads, hamstrings, and glutes. Keep your back straight and lower until thighs are parallel to the floor.",
-        videoUrl: "https://www.youtube.com/embed/Dy28eq2PjcM",
+        videoUrl: "https://www.youtube.com/embed/Dy28eq2PjcM", // Added link
     },
     {
         id: "2",
@@ -27,7 +27,7 @@ const EXERCISE_DATA: Exercise[] = [
         muscleGroup: "Chest",
         difficulty: "Intermediate",
         description: "Lie on a bench and lower the barbell to your chest, then press upward until arms are extended.",
-        videoUrl: "https://www.youtube.com/embed/rT7DgCr-3pg",
+        videoUrl: "https://www.youtube.com/embed/rT7DgCr-3pg", // Added link
     },
     {
         id: "3",
@@ -35,6 +35,7 @@ const EXERCISE_DATA: Exercise[] = [
         muscleGroup: "Back",
         difficulty: "Advanced",
         description: "Hang from a bar with palms facing away and pull your chin over the bar.",
+        videoUrl: "https://www.youtube.com/embed/eGo4IYlbE5g", // Added link
     },
     {
         id: "4",
@@ -42,6 +43,7 @@ const EXERCISE_DATA: Exercise[] = [
         muscleGroup: "Chest",
         difficulty: "Beginner",
         description: "Basic bodyweight exercise. Keep your body straight and lower your chest to the floor.",
+        videoUrl: "https://www.youtube.com/embed/IODxDxX7oi4", // Added link
     },
     {
         id: "5",
@@ -49,7 +51,7 @@ const EXERCISE_DATA: Exercise[] = [
         muscleGroup: "Full Body",
         difficulty: "Advanced",
         description: "Lift a loaded barbell from the ground to hip level, keeping your back straight.",
-        videoUrl: "https://www.youtube.com/embed/1ZXobu7JvvE",
+        videoUrl: "https://www.youtube.com/embed/1ZXobu7JvvE", // Added link
     },
     {
         id: "6",
@@ -57,6 +59,7 @@ const EXERCISE_DATA: Exercise[] = [
         muscleGroup: "Shoulders",
         difficulty: "Intermediate",
         description: "Press dumbbells overhead while seated or standing.",
+        videoUrl: "https://www.youtube.com/embed/qEwKCR5JCog", // Added link
     },
 ];
 
@@ -126,8 +129,8 @@ export default function ExercisesPage() {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => setSelectedExercise(exercise)}
                                     className={`p-3 rounded-md cursor-pointer transition-colors ${selectedExercise?.id === exercise.id
-                                            ? "bg-red-600"
-                                            : "bg-gray-700 hover:bg-gray-600"
+                                        ? "bg-red-600"
+                                        : "bg-gray-700 hover:bg-gray-600"
                                         }`}
                                 >
                                     <h3 className="font-medium">{exercise.name}</h3>
@@ -136,8 +139,8 @@ export default function ExercisesPage() {
                                             {exercise.muscleGroup}
                                         </span>
                                         <span className={`text-xs px-2 py-1 rounded-full ${exercise.difficulty === "Beginner" ? "bg-green-600" :
-                                                exercise.difficulty === "Intermediate" ? "bg-yellow-600" :
-                                                    "bg-red-600"
+                                            exercise.difficulty === "Intermediate" ? "bg-yellow-600" :
+                                                "bg-red-600"
                                             }`}>
                                             {exercise.difficulty}
                                         </span>
@@ -163,8 +166,8 @@ export default function ExercisesPage() {
                                                 {selectedExercise.muscleGroup}
                                             </span>
                                             <span className={`text-sm px-2 py-1 rounded-full ${selectedExercise.difficulty === "Beginner" ? "bg-green-600" :
-                                                    selectedExercise.difficulty === "Intermediate" ? "bg-yellow-600" :
-                                                        "bg-red-600"
+                                                selectedExercise.difficulty === "Intermediate" ? "bg-yellow-600" :
+                                                    "bg-red-600"
                                                 }`}>
                                                 {selectedExercise.difficulty}
                                             </span>

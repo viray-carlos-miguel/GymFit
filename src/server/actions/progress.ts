@@ -4,7 +4,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "../db";
 import { and, eq, gte, lte } from "drizzle-orm";
-import { progressEntries } from "../db/schema";
+import { dailyProgress } from "../db/schema";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { MonthlyProgressData } from "~/types/progress";
 
@@ -15,7 +15,7 @@ export async function getMonthlyProgress(year: number, month: number): Promise<M
     const monthStart = startOfMonth(new Date(year, month - 1));
     const monthEnd = endOfMonth(new Date(year, month - 1));
 
-    const entries = await db.query.progressEntries.findMany({
+    const entries = await db.query.dailyProgress.findMany({
         where: (model, { and, eq, gte, lte }) =>
             and(
                 eq(model.userId, user.userId),

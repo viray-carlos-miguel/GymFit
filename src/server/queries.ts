@@ -1,6 +1,6 @@
 "use server";
 import { db } from "./db";
-import { progressEntries } from "./db/schema";
+import { dailyProgress } from "./db/schema";
 import { and, eq, gte, lte, isNotNull, asc } from "drizzle-orm";
 import { ensureAuth, getMonthStartEnd, getDayStartEnd } from "./utils";
 
@@ -40,11 +40,11 @@ export async function recordDailyProgress(data: Omit<ProgressData, "date">) {
     const today = new Date();
     const { dayStart, dayEnd } = getDayStartEnd(today);
 
-    const existingEntry = await db.query.progressEntries.findFirst({
+    const existingEntry = await db.query.dailyProgress.findFirst({
       where: and(
-        eq(progressEntries.userId, user.userId),
-        gte(progressEntries.date, dayStart),
-        lte(progressEntries.date, dayEnd)
+        eq(dailyProgress.userId, user.userId),
+        gte(dailyProgress.date, dayStart),
+        lte(dailyProgress.date, dayEnd)
       ),
     });
 
@@ -64,16 +64,16 @@ export async function recordDailyProgress(data: Omit<ProgressData, "date">) {
 
     if (existingEntry) {
       await db
-        .update(progressEntries)
+        .update(dailyProgress)
         .set(updateData)
         .where(
           and(
-            eq(progressEntries.id, existingEntry.id),
-            eq(progressEntries.userId, user.userId)
+            eq(dailyProgress.id, existingEntry.id),
+            eq(dailyProgress.userId, user.userId)
           )
         );
     } else {
-      await db.insert(progressEntries).values({
+      await db.insert(dailyProgress).values({
         userId: user.userId,
         date: today,
         ...updateData,
@@ -93,11 +93,11 @@ export async function getDailyProgress(date: Date): Promise<ProgressEntry | null
     const user = await ensureAuth();
     const { dayStart, dayEnd } = getDayStartEnd(date);
 
-    const entry = await db.query.progressEntries.findFirst({
+    const entry = await db.query.dailyProgress.findFirst({
       where: and(
-        eq(progressEntries.userId, user.userId),
-        gte(progressEntries.date, dayStart),
-        lte(progressEntries.date, dayEnd)
+        eq(dailyProgress.userId, user.userId),
+        gte(dailyProgress.date, dayStart),
+        lte(dailyProgress.date, dayEnd)
       ),
     });
 
@@ -134,13 +134,13 @@ export async function getMonthlyProgressSummary(year: number, month: number) {
     const user = await ensureAuth();
     const { monthStart, monthEnd } = getMonthStartEnd(year, month);
 
-    const entries = await db.query.progressEntries.findMany({
+    const entries = await db.query.dailyProgress.findMany({
       where: and(
-        eq(progressEntries.userId, user.userId),
-        gte(progressEntries.date, monthStart),
-        lte(progressEntries.date, monthEnd)
+        eq(dailyProgress.userId, user.userId),
+        gte(dailyProgress.date, monthStart),
+        lte(dailyProgress.date, monthEnd)
       ),
-      orderBy: asc(progressEntries.date),
+      orderBy: asc(dailyProgress.date),
     });
 
     const transformedEntries: ProgressEntry[] = entries
@@ -228,11 +228,11 @@ export async function getProgressPhoto(date: Date): Promise<string | null> {
     const user = await ensureAuth();
     const { dayStart, dayEnd } = getDayStartEnd(date);
 
-    const entry = await db.query.progressEntries.findFirst({
+    const entry = await db.query.dailyProgress.findFirst({
       where: and(
-        eq(progressEntries.userId, user.userId),
-        gte(progressEntries.date, dayStart),
-        lte(progressEntries.date, dayEnd)
+        eq(dailyProgress.userId, user.userId),
+        gte(dailyProgress.date, dayStart),
+        lte(dailyProgress.date, dayEnd)
       ),
       columns: { photoUrl: true },
     });
@@ -248,14 +248,14 @@ export async function getWeightTrend(startDate: Date, endDate: Date) {
   try {
     const user = await ensureAuth();
 
-    const entries = await db.query.progressEntries.findMany({
+    const entries = await db.query.dailyProgress.findMany({
       where: and(
-        eq(progressEntries.userId, user.userId),
-        gte(progressEntries.date, startDate),
-        lte(progressEntries.date, endDate),
-        isNotNull(progressEntries.weight)
+        eq(dailyProgress.userId, user.userId),
+        gte(dailyProgress.date, startDate),
+        lte(dailyProgress.date, endDate),
+        isNotNull(dailyProgress.weight)
       ),
-      orderBy: asc(progressEntries.date),
+      orderBy: asc(dailyProgress.date),
       columns: { date: true, weight: true },
     });
 

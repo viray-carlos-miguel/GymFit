@@ -45,7 +45,7 @@ export const images = createTable(
 // src/server/db/schema.ts
 
 
-export const progressEntries = pgTable("progress_entries", {
+export const dailyProgress = pgTable("progress_entries", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 256 }).notNull(),
   date: timestamp("date").notNull(),
@@ -58,3 +58,16 @@ export const progressEntries = pgTable("progress_entries", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+import { numeric, date } from "drizzle-orm/pg-core";
+
+export const monthlyProgress = pgTable("monthly_progress", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  totalWorkouts: integer("total_workouts").default(0),
+  totalCaloriesBurned: integer("total_calories_burned").default(0),
+  totalDistance: numeric("total_distance").default("0"), // in km
+  totalWeightLifted: numeric("total_weight_lifted").default("0"), // in kg
+  averageWorkoutDuration: numeric("average_workout_duration").default("0"), // in minutes
+});

@@ -10,6 +10,7 @@ import { ourFileRouter } from "./api/uploadthing/core";
 import { Toaster } from "~/components/ui/sonner";
 import { PostHogProvider } from "./_analytics/provider";
 import { SimpleUploadButton } from "./_components/upload-button";
+import { ProgressProvider } from "~/context/progress-context";
 
 export const metadata: Metadata = {
   title: "ourgallery",
@@ -25,28 +26,30 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) {
   return (
     <ClerkProvider>
-    <html lang="en" className={`${GeistSans.variable} dark`}>
-    <NextSSRPlugin
-          /**
-           * The `extractRouterConfig` will extract **only** the route configs
-           * from the router to prevent additional information from being
-           * leaked to the client. The data passed to the client is the same
-           * as if you were to fetch `/api/uploadthing` directly.
-           */
+      <html lang="en" className={`${GeistSans.variable} dark`}>
+        <NextSSRPlugin
           routerConfig={extractRouterConfig(ourFileRouter)}
         />
-      <body>
-        <PostHogProvider>
-        <div className="grid h-screen grid-rows-[auto,1fr]">
-              <TopNav/>
-       <main className="overflow-y-scroll">{children}</main> 
-        </div>
-        {modal}
-        <div id="modal-root"></div>
-        <Toaster/>
-        </PostHogProvider>
+        <body>
+          <ProgressProvider>
+            <PostHogProvider>
+              <div className="grid h-screen grid-rows-[auto,1fr]">
+                <TopNav />
+                <main className="overflow-y-scroll">{children}</main>
+              </div>
+              {modal}
+              <div id="modal-root"></div>
+              <Toaster />
+            </PostHogProvider>
+          </ProgressProvider>
         </body>
-    </html>
+      </html>
     </ClerkProvider>
   );
 }
+
+
+
+
+
+
